@@ -28,6 +28,34 @@ Resources:
         Variables:
           PARAM1: VALUE
 
+  ProductCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: product-create/
+      Handler: product-create
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /product
+            Method: POST
+
+  ProductTable:
+    Type: AWS::DynamoDB::Table # Could also use AWS::Serverless::SimpleTable as we only have a hash key
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: sku
+          AttributeType: S
+      KeySchema:
+        - AttributeName: sku
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+
+
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
@@ -41,3 +69,20 @@ Outputs:
   HelloWorldFunctionIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt HelloWorldFunctionRole.Arn
+
+  ProductCreateAPI:
+    Description: "API Gateway endpoint URL for Prod environment for product create"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/product/"
+  ProductCreateFunction:
+    Description: "Product create Lambda Function ARN"
+    Value: !GetAtt ProductCreateFunction.Arn
+  ProductCreateFunctionIamRole:
+    Description: "Implicit IAM Role created for product create function"
+    Value: !GetAtt ProductCreateFunctionRole.Arn
+
+  ProductTable:
+    Description: "Product table ARN"
+    Value: !GetAtt ProductTable.Arn
+  ProductTableIamRole:
+    Description: "IAM role created for product table"
+    Value: !GetAtt ProductTableRole.Arn
