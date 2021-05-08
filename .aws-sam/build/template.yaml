@@ -38,9 +38,13 @@ Resources:
           Properties:
             Path: /product
             Method: POST
+      Policies:
+      - DynamoDBWritePolicy:
+          TableName: Product
   ProductTable:
     Type: AWS::DynamoDB::Table
     Properties:
+      TableName: Product
       AttributeDefinitions:
       - AttributeName: sku
         AttributeType: S
@@ -88,10 +92,4 @@ Outputs:
     Value:
       Fn::GetAtt:
       - ProductTable
-      - Arn
-  ProductTableIamRole:
-    Description: IAM role created for product table
-    Value:
-      Fn::GetAtt:
-      - ProductTableRole
       - Arn

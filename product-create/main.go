@@ -6,10 +6,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	// "github.com/aws/aws-sdk-go/aws"
-	// "github.com/aws/aws-sdk-go/aws/session"
-	// "github.com/aws/aws-sdk-go/service/dynamodb"
-	// "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type Product struct {
@@ -32,13 +32,32 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	fmt.Println("Product: ", product)
 
-	// session := session.Must(session.NewSessionWithOptions(session.Options{
-	// 	SharedConfigState: session.SharedConfigEnable,
-	// }))
+	session := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
 
-	// svc := dynamodb.New(session)
+	svc := dynamodb.New(session)
 
-	// prod, err := dynamodbattribute.MarshalMap()
+	prod, err := dynamodbattribute.MarshalMap(product)
+	if err != nil {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 500,
+		}, err
+		fmt.Println("Error creating DynamoDB map of product: ", err)
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      prod,
+		TableName: aws.String("Product"),
+	}
+
+	_, err = svc.PutItem(input)
+	if err != nil {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 500,
+		}, err
+		fmt.Println("Error writing product to DynamoDB: ", err)
+	}
 
 	return events.APIGatewayProxyResponse{
 		Body: request.Body,

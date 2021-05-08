@@ -13,7 +13,7 @@ func TestHandler(t *testing.T) {
 		response, err := handler(events.APIGatewayProxyRequest{Body: requestBody})
 
 		if err != nil {
-			t.Fatal("Error not expected")
+			t.Fatalf("Error not expected. Error %s", err)
 		}
 
 		if response.StatusCode != 200 {

@@ -41,10 +41,14 @@ Resources:
           Properties:
             Path: /product
             Method: POST
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: Product
 
   ProductTable:
     Type: AWS::DynamoDB::Table # Could also use AWS::Serverless::SimpleTable as we only have a hash key
     Properties:
+      TableName: Product
       AttributeDefinitions:
         - AttributeName: sku
           AttributeType: S
@@ -83,6 +87,3 @@ Outputs:
   ProductTable:
     Description: "Product table ARN"
     Value: !GetAtt ProductTable.Arn
-  ProductTableIamRole:
-    Description: "IAM role created for product table"
-    Value: !GetAtt ProductTableRole.Arn
