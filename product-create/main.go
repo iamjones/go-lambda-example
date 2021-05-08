@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -18,13 +17,16 @@ type Product struct {
 	Name string `json:"name"`
 }
 
-func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	fmt.Println("Request body: ", request.Body)
 
 	var product Product
 	err := json.Unmarshal([]byte(request.Body), &product)
 	if err != nil {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 500,
+		}, err
 		fmt.Println("Error converting JSON to struct: ", err)
 	}
 
