@@ -1,0 +1,13 @@
+{
+    "TableName": "Product",
+    "KeySchema": [
+      { "AttributeName": "sku", "KeyType": "HASH" }
+    ],
+    "AttributeDefinitions": [
+      { "AttributeName": "sku", "AttributeType": "S" }
+    ],
+    "ProvisionedThroughput": {
+      "ReadCapacityUnits": 1,
+      "WriteCapacityUnits": 1
+    }
+}

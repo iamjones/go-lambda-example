@@ -2,7 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -10,53 +11,54 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
+
+type Dependencies struct {
+	ddb dynamodbiface.DynamoDBAPI
+	table string
+}
 
 type Product struct {
 	Sku string `json:"sku"`
 	Name string `json:"name"`
 }
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (d *Dependencies) handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-	fmt.Println("Request body: ", request.Body)
+	log.Println("Request body: ", request.Body)
+	log.Println("Environment: ", os.Getenv("AWS_SAM_LOCAL"))
 
 	var product Product
 	err := json.Unmarshal([]byte(request.Body), &product)
 	if err != nil {
+		log.Println("Error converting JSON to struct: ", err)
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
 		}, err
-		fmt.Println("Error converting JSON to struct: ", err)
 	}
 
-	fmt.Println("Product: ", product)
-
-	session := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	svc := dynamodb.New(session)
+	log.Println("Product: ", product)
 
 	prod, err := dynamodbattribute.MarshalMap(product)
 	if err != nil {
+		log.Println("Error creating DynamoDB map of product: ", err)
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
 		}, err
-		fmt.Println("Error creating DynamoDB map of product: ", err)
 	}
 
 	input := &dynamodb.PutItemInput{
 		Item:      prod,
-		TableName: aws.String("Product"),
+		TableName: aws.String(d.table),
 	}
 
-	_, err = svc.PutItem(input)
+	_, err = d.ddb.PutItem(input)
 	if err != nil {
+		log.Println("Error writing product to DynamoDB: ", err)
 		return events.APIGatewayProxyResponse{
-			StatusCode: 500,
+			StatusCode: 502,
 		}, err
-		fmt.Println("Error writing product to DynamoDB: ", err)
 	}
 
 	return events.APIGatewayProxyResponse{
@@ -66,5 +68,24 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 }
 
 func main() {
-	lambda.Start(handler)
+	d := Dependencies{
+		ddb: createDynamoDbSession(),
+		table: "Product",
+	}
+
+	lambda.Start(d.handler)
+}
+
+func createDynamoDbSession() *dynamodb.DynamoDB {
+	session := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	if os.Getenv("AWS_SAM_LOCAL") == "true" {
+		log.Println("Configuring DynamoDB for local use")
+		return dynamodb.New(session, &aws.Config{Endpoint: aws.String("http://localhost:8000/")})
+	} else {
+		log.Println("Configuring DynamoDB for prod use")
+		return dynamodb.New(session)
+	}
 }
